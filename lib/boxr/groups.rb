@@ -1,6 +1,7 @@
+# frozen_string_literal: true
+
 module Boxr
   class Client
-
     def groups(fields: [], offset: 0, limit: DEFAULT_LIMIT)
       query = build_fields_query(fields, GROUP_FIELDS_QUERY)
       groups = get_all_with_pagination(GROUPS_URI, query: query, offset: offset, limit: limit)
@@ -14,23 +15,23 @@ module Boxr
       group, response = get(uri, query: query)
       group
     end
-    alias :group :group_from_id
+    alias group group_from_id
 
     def create_group(name)
-      attributes = {name: name}
+      attributes = { name: name }
       new_group, response = post(GROUPS_URI, attributes)
-      new_group 
+      new_group
     end
 
     def update_group(group, name)
       group_id = ensure_id(group)
       uri = "#{GROUPS_URI}/#{group_id}"
-      attributes = {name: name}
+      attributes = { name: name }
 
       updated_group, response = put(uri, attributes)
       updated_group
     end
-    alias :rename_group :update_group
+    alias rename_group update_group
 
     def delete_group(group)
       group_id = ensure_id(group)
@@ -62,13 +63,13 @@ module Boxr
       membership, response = get(uri)
       membership
     end
-    alias :group_membership :group_membership_from_id
+    alias group_membership group_membership_from_id
 
     def add_user_to_group(user, group, role: nil)
       user_id = ensure_id(user)
       group_id = ensure_id(group)
 
-      attributes = {user: {id: user_id}, group: {id: group_id}}
+      attributes = { user: { id: user_id }, group: { id: group_id } }
       attributes[:role] = role unless role.nil?
       membership, response = post(GROUP_MEMBERSHIPS_URI, attributes)
       membership
@@ -77,7 +78,7 @@ module Boxr
     def update_group_membership(membership, role)
       membership_id = ensure_id(membership)
       uri = "#{GROUP_MEMBERSHIPS_URI}/#{membership_id}"
-      attributes = {role: role}
+      attributes = { role: role }
       updated_membership, response = put(uri, attributes)
       updated_membership
     end
@@ -94,6 +95,5 @@ module Boxr
       uri = "#{GROUPS_URI}/#{group_id}/collaborations"
       collaborations = get_all_with_pagination(uri, offset: offset, limit: limit)
     end
-
   end
 end

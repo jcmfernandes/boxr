@@ -1,8 +1,9 @@
+# frozen_string_literal: true
+
 module Boxr
   class Client
-
     def chunked_upload_create_session_new_file(path_to_file, parent, name: nil)
-      filename = name ? name : File.basename(path_to_file)
+      filename = name || File.basename(path_to_file)
 
       File.open(path_to_file) do |file|
         chunked_upload_create_session_new_file_from_io(file, parent, filename)
@@ -13,14 +14,14 @@ module Boxr
       parent_id = ensure_id(parent)
 
       uri = "#{UPLOAD_URI}/files/upload_sessions"
-      body = {folder_id: parent_id, file_size: io.size, file_name: name}
-      session_info, response = post(uri, body, content_type: "application/json")
+      body = { folder_id: parent_id, file_size: io.size, file_name: name }
+      session_info, response = post(uri, body, content_type: 'application/json')
 
       session_info
     end
 
     def chunked_upload_create_session_new_version(path_to_file, file, name: nil)
-      filename = name ? name : File.basename(path_to_file)
+      filename = name || File.basename(path_to_file)
 
       File.open(path_to_file) do |io|
         chunked_upload_create_session_new_version_from_io(io, file, filename)
@@ -30,8 +31,8 @@ module Boxr
     def chunked_upload_create_session_new_version_from_io(io, file, name)
       file_id = ensure_id(file)
       uri = "#{UPLOAD_URI}/files/#{file_id}/upload_sessions"
-      body = {file_size: io.size, file_name: name}
-      session_info, response = post(uri, body, content_type: "application/json")
+      body = { file_size: io.size, file_name: name }
+      session_info, response = post(uri, body, content_type: 'application/json')
 
       session_info
     end
@@ -60,7 +61,7 @@ module Boxr
 
       uri = "#{UPLOAD_URI}/files/upload_sessions/#{session_id}"
       body = data
-      part_info, response = put(uri, body, process_body: false, digest: digest, content_type: "application/octet-stream", content_range: range)
+      part_info, response = put(uri, body, process_body: false, digest: digest, content_type: 'application/octet-stream', content_range: range)
 
       part_info.part
     end
@@ -84,7 +85,7 @@ module Boxr
     def chunked_upload_commit_from_io(io, session_id, parts, content_created_at: nil, content_modified_at: nil, if_match: nil, if_non_match: nil)
       io.pos = 0
       digest = Digest::SHA1.new
-      while (buf = io.read(8 * 1024**2)) && buf.size > 0
+      while (buf = io.read(8 * 1024**2)) && !buf.empty?
         digest.update(buf)
       end
       io.rewind
@@ -99,7 +100,7 @@ module Boxr
         parts: parts,
         attributes: attributes
       }
-      commit_info, response = post(uri, body, process_body: true, digest: digest, content_type: "application/json", if_match: if_match, if_non_match: if_non_match)
+      commit_info, response = post(uri, body, process_body: true, digest: digest, content_type: 'application/json', if_match: if_match, if_non_match: if_non_match)
 
       commit_info
     end
@@ -112,7 +113,7 @@ module Boxr
     end
 
     def chunked_upload_file(path_to_file, parent, name: nil, n_threads: 1, content_created_at: nil, content_modified_at: nil)
-      filename = name ? name : File.basename(path_to_file)
+      filename = name || File.basename(path_to_file)
 
       File.open(path_to_file) do |file|
         chunked_upload_file_from_io(file, parent, filename, n_threads: n_threads, content_created_at: content_created_at, content_modified_at: content_modified_at)
@@ -132,7 +133,7 @@ module Boxr
     end
 
     def chunked_upload_new_version_of_file(path_to_file, file, name: nil, n_threads: 1, content_created_at: nil, content_modified_at: nil)
-      filename = name ? name : File.basename(path_to_file)
+      filename = name || File.basename(path_to_file)
 
       File.open(path_to_file) do |io|
         chunked_upload_new_version_of_file_from_io(io, file, filename, n_threads: n_threads, content_created_at: content_created_at, content_modified_at: content_modified_at)
@@ -168,7 +169,9 @@ module Boxr
 
       parts =
         if n_threads > 1
-          raise BoxrError.new(boxr_message: "parallel chunked uploads requires gem parallel (#{PARALLEL_GEM_REQUIREMENT}) to be loaded") unless gem_parallel_available?
+          unless gem_parallel_available?
+            raise BoxrError.new(boxr_message: "parallel chunked uploads requires gem parallel (#{PARALLEL_GEM_REQUIREMENT}) to be loaded")
+          end
 
           Parallel.map(content_ranges, in_threads: n_threads) do |content_range|
             File.open(io.path) do |io_dup|
@@ -187,11 +190,10 @@ module Boxr
     end
 
     def gem_parallel_available?
-      gem_spec  = Gem.loaded_specs['parallel']
+      gem_spec = Gem.loaded_specs['parallel']
       return false if gem_spec.nil?
 
       PARALLEL_GEM_REQUIREMENT.satisfied_by?(gem_spec.version) && defined?(Parallel)
     end
-
   end
 end
